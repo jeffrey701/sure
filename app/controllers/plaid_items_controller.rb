@@ -31,6 +31,9 @@ class PlaidItemsController < ApplicationController
     )
 
     redirect_to accounts_path, notice: t(".success")
+  rescue Plaid::ApiError => e
+    Sentry.capture_exception(e)
+    redirect_to accounts_path, alert: friendly_plaid_error(e)
   end
 
   def destroy
@@ -114,5 +117,31 @@ class PlaidItemsController < ApplicationController
       return webhooks_plaid_eu_url if Rails.env.production?
 
       ENV.fetch("DEV_WEBHOOKS_URL", root_url.chomp("/")) + "/webhooks/plaid_eu"
+    end
+
+    # Map a Plaid::ApiError to a user-facing message. Known product-access
+    # codes get a tailored message that points the operator at the Plaid
+    # dashboard; everything else falls back to Plaid's own `display_message`
+    # (already sanitized for end users by Plaid) or a generic notice.
+    def friendly_plaid_error(error)
+      body =
+        begin
+          JSON.parse(error.response_body.to_s)
+        rescue JSON::ParserError, TypeError
+          {}
+        end
+
+      key =
+        case body["error_code"]
+        when "INVALID_PRODUCT", "PRODUCTS_NOT_SUPPORTED"
+          ".plaid_error_invalid_product"
+        when "INVALID_API_KEYS", "INVALID_CREDENTIALS"
+          ".plaid_error_invalid_credentials"
+        end
+
+      return t(key) if key
+
+      display_message = body["display_message"].presence
+      display_message ? t(".plaid_error_with_message", message: display_message) : t(".plaid_error_generic")
     end
 end

@@ -3,6 +3,10 @@ en:
   plaid_items:
     create:
       success: Account linked successfully.  Please wait for accounts to sync.
+      plaid_error_generic: "Plaid setup failed. Check your Plaid dashboard for details, or try again."
+      plaid_error_with_message: "Plaid setup failed: %{message}"
+      plaid_error_invalid_product: "Plaid setup failed: your Plaid account is not enabled for the products this connection requires. Request access in the Plaid dashboard (https://dashboard.plaid.com/overview/request-products) and try again."
+      plaid_error_invalid_credentials: "Plaid setup failed: the configured Plaid API keys are invalid for this environment. Verify your Plaid client_id and secret in your environment settings."
     destroy:
       success: Accounts scheduled for deletion.
     plaid_item:
